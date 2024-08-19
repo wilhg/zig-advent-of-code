@@ -4,9 +4,9 @@ const ArrayList = std.ArrayList;
 
 const Replacement = struct {
     from: []const u8,
-    to: []const u8,
+    to: u8,
 };
-const rs = [10]Replacement{ .{ .from = "zero", .to = "0" }, .{ .from = "one", .to = "1" }, .{ .from = "two", .to = "2" }, .{ .from = "three", .to = "3" }, .{ .from = "four", .to = "4" }, .{ .from = "five", .to = "5" }, .{ .from = "six", .to = "6" }, .{ .from = "seven", .to = "7" }, .{ .from = "eight", .to = "8" }, .{ .from = "nine", .to = "9" } };
+const rs = [10]Replacement{ .{ .from = "zero", .to = '0' }, .{ .from = "one", .to = '1' }, .{ .from = "two", .to = '2' }, .{ .from = "three", .to = '3' }, .{ .from = "four", .to = '4' }, .{ .from = "five", .to = '5' }, .{ .from = "six", .to = '6' }, .{ .from = "seven", .to = '7' }, .{ .from = "eight", .to = '8' }, .{ .from = "nine", .to = '9' } };
 
 pub fn main() !void {
     const file = try std.fs.cwd().openFile("d1_input.txt", .{});
@@ -45,8 +45,8 @@ fn replaceSubStrings(allocator: mem.Allocator, input: []const u8, replacements: 
         var replaced = false;
         for (replacements) |replacement| {
             if (mem.startsWith(u8, input[i..], replacement.from)) {
-                try result.appendSlice(replacement.to);
-                i += replacement.to.len;
+                try result.append(replacement.to);
+                i += 1;
                 replaced = true;
                 break;
             }
