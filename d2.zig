@@ -101,6 +101,18 @@ fn isCubesValid(c: Cubes) bool {
     return c.red <= totalCubes.red and c.green <= totalCubes.green and c.blue <= totalCubes.blue;
 }
 
+fn powerOfGame(game: Game) u16 {
+    var max_red: u16 = 0;
+    var max_green: u16 = 0;
+    var max_blue: u16 = 0;
+    for (game.rounds) |cubes| {
+        max_red = @max(max_red, cubes.red);
+        max_green = @max(max_green, cubes.green);
+        max_blue = @max(max_blue, cubes.blue);
+    }
+    return max_red * max_green * max_blue;
+}
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -118,4 +130,12 @@ pub fn main() !void {
 
     const sum = sumValidGameId(games);
     std.debug.print("{d}\n", .{sum});
+
+    var sum_of_power: u16 = 0;
+    for (games.items) |game| {
+        const power = powerOfGame(game);
+        std.debug.print("{d}\n", .{power});
+        sum_of_power += power;
+    }
+    std.debug.print("{d}\n", .{sum_of_power});
 }
