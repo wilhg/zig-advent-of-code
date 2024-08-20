@@ -31,29 +31,23 @@ const Number = struct {
 // get the attached number from the point,
 // if the point not belongs to a number, return null
 fn getNumber(matrix: Matrix, p: Point) ?Number {
-    if (!isNumeric(matrix[p.y][p.x])) {
-        return null;
+    if (!isNumeric(matrix[p.y][p.x])) return null;
+
+    var start_x = p.x;
+    while (start_x > 0 and isNumeric(matrix[p.y][start_x - 1])) {
+        start_x -= 1;
     }
 
-    var x0 = p.x;
-    var start_x = x0;
-    while (isNumeric(matrix[p.y][x0])) {
-        start_x = x0;
-        if (x0 > 0) {
-            x0 -= 1;
-        } else {
-            break;
-        }
-    }
-    debug.print("start_x = {}\n", .{start_x});
-    var x1 = start_x;
     var value: u16 = 0;
-    while (x1 < LEN and isNumeric(matrix[p.y][x1])) {
-        value = value * 10 + (matrix[p.y][x1] - '0');
-        x1 += 1;
+    var x = start_x;
+    while (x < LEN and isNumeric(matrix[p.y][x])) : (x += 1) {
+        value = value * 10 + (matrix[p.y][x] - '0');
     }
 
-    return Number{ .pointHash = @intCast(p.y * LEN + start_x), .value = value };
+    return Number{
+        .pointHash = @intCast(p.y * LEN + start_x),
+        .value = value,
+    };
 }
 
 fn squareAround(p: Point) Square {
