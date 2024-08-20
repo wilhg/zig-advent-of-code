@@ -1,3 +1,5 @@
+// https://adventofcode.com/2023/day/3
+
 const std = @import("std");
 const mem = std.mem;
 const fs = std.fs;
@@ -19,7 +21,7 @@ const Number = struct {
     value: u16,
 };
 
-inline fn getNumber(matrix: *const Matrix, p: Point) ?Number {
+fn getNumber(matrix: *const Matrix, p: Point) ?Number {
     if (!isNumeric(matrix[p.y][p.x])) return null;
 
     var start_x = p.x;
@@ -39,7 +41,7 @@ inline fn getNumber(matrix: *const Matrix, p: Point) ?Number {
     };
 }
 
-inline fn squareAround(p: Point) [8]Point {
+fn squareAround(p: Point) [8]Point {
     return .{
         .{ .x = p.x -| 1, .y = p.y -| 1 },
         .{ .x = p.x, .y = p.y -| 1 },
@@ -71,15 +73,15 @@ fn loadMatrix() !Matrix {
     return matrix;
 }
 
-inline fn isDot(cell: u8) bool {
+fn isDot(cell: u8) bool {
     return cell == '.';
 }
 
-inline fn isNumeric(cell: u8) bool {
+fn isNumeric(cell: u8) bool {
     return cell >= '0' and cell <= '9';
 }
 
-inline fn isSymbol(cell: u8) bool {
+fn isSymbol(cell: u8) bool {
     return !isDot(cell) and !isNumeric(cell);
 }
 
