@@ -1,3 +1,5 @@
+// https://adventofcode.com/2023/day/3
+
 const std = @import("std");
 const mem = std.mem;
 const fs = std.fs;
@@ -120,13 +122,6 @@ pub fn main() !void {
     const loc = arena.allocator();
 
     const matrix = try loadMatrix();
-    // Print the 2D array to verify
-    // for (matrix) |row_data| {
-    //     for (row_data) |cell| {
-    //         try std.io.getStdOut().writer().print("{c}", .{cell});
-    //     }
-    //     try std.io.getStdOut().writer().print("\n", .{});
-    // }
 
     var squares = ArrayList(Square).init(loc);
     for (0..LEN) |y| {
@@ -137,6 +132,7 @@ pub fn main() !void {
         }
     }
 
+    // put intersection numbers to the hash map
     var map = AutoHashMap(u16, u16).init(loc);
 
     for (squares.items) |sq| {
@@ -154,7 +150,6 @@ pub fn main() !void {
     var sum: i32 = 0;
     var iterator = map.valueIterator();
     while (iterator.next()) |value| {
-        debug.print("value = {}\n", .{value.*});
         sum += value.*;
     }
     debug.print("Sum of all values: {}\n", .{sum});
