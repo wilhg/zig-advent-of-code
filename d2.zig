@@ -2,7 +2,6 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const mem = std.mem;
 const fmt = std.fmt;
-const util = @import("util.zig");
 
 const Cubes = struct {
     red: u8,
@@ -15,11 +14,11 @@ const Game = struct {
     rounds: []Cubes,
 };
 
-fn parseLine(allocator: std.mem.Allocator, line: []const u8) !Game {
+fn parseLine(loc: std.mem.Allocator, line: []const u8) !Game {
     var game_parts = mem.split(u8, line, ":");
     const game_id = try fmt.parseInt(u8, game_parts.next().?[5..], 10);
 
-    var rounds = ArrayList(Cubes).init(allocator);
+    var rounds = ArrayList(Cubes).init(loc);
     errdefer rounds.deinit();
 
     var rounds_str = mem.split(u8, game_parts.next().?, ";");
@@ -44,11 +43,11 @@ fn parseLine(allocator: std.mem.Allocator, line: []const u8) !Game {
     return Game{ .id = game_id, .rounds = try rounds.toOwnedSlice() };
 }
 
-fn readInput(allocator: std.mem.Allocator, filename: []const u8) !ArrayList(Game) {
-    var games = ArrayList(Game).init(allocator);
+fn readInput(loc: std.mem.Allocator, filename: []const u8) !ArrayList(Game) {
+    var games = ArrayList(Game).init(loc);
     errdefer {
         for (games.items) |game| {
-            allocator.free(game.rounds);
+            loc.free(game.rounds);
         }
         games.deinit();
     }
@@ -62,7 +61,7 @@ fn readInput(allocator: std.mem.Allocator, filename: []const u8) !ArrayList(Game
     var buf: [256]u8 = undefined;
 
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        try games.append(try parseLine(allocator, line));
+        try games.append(try parseLine(loc, line));
     }
 
     return games;
@@ -78,18 +77,45 @@ fn printGames(games: ArrayList(Game)) void {
     }
 }
 
+fn sumValidGameId(games: ArrayList(Game)) u16 {
+    var sum: u16 = 0;
+    for (games.items) |game| {
+        if (isGameValid(game)) {
+            sum += game.id;
+        }
+    }
+    return sum;
+}
+
+fn isGameValid(game: Game) bool {
+    for (game.rounds) |round| {
+        if (!isCubesValid(round)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn isCubesValid(c: Cubes) bool {
+    const totalCubes = Cubes{ .red = 12, .green = 13, .blue = 14 };
+    return c.red <= totalCubes.red and c.green <= totalCubes.green and c.blue <= totalCubes.blue;
+}
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    const allocator = arena.allocator();
+    const loc = arena.allocator();
 
-    var games = try readInput(allocator, "d2_input.txt");
+    var games = try readInput(loc, "d2_input.txt");
     defer {
         for (games.items) |game| {
-            allocator.free(game.rounds);
+            loc.free(game.rounds);
         }
         games.deinit();
     }
 
-    printGames(games);
+    // printGames(games);
+
+    const sum = sumValidGameId(games);
+    std.debug.print("{d}\n", .{sum});
 }
