@@ -41,7 +41,7 @@ fn getNumber(matrix: *const Matrix, p: Point) ?Number {
     };
 }
 
-fn squareAround(p: Point) [8]Point {
+inline fn squareAround(p: Point) [8]Point {
     return .{
         .{ .x = p.x -| 1, .y = p.y -| 1 },
         .{ .x = p.x, .y = p.y -| 1 },
@@ -61,13 +61,10 @@ fn loadMatrix() !Matrix {
     var matrix: Matrix = undefined;
     var buf_reader = io.bufferedReader(file.reader());
     var in_stream = buf_reader.reader();
-    var buf: [LEN + 1]u8 = undefined;
 
-    var row: usize = 0;
-    while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        if (row >= LEN) break;
-        @memcpy(&matrix[row], line);
-        row += 1;
+    for (&matrix) |*row| {
+        _ = try in_stream.readNoEof(row);
+        _ = try in_stream.skipUntilDelimiterOrEof('\n');
     }
 
     return matrix;
@@ -85,6 +82,10 @@ fn isSymbol(cell: u8) bool {
     return !isDot(cell) and !isNumeric(cell);
 }
 
+fn isGear(cell: u8) bool {
+    return cell == '*';
+}
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -95,23 +96,38 @@ pub fn main() !void {
     var map = AutoHashMap(u16, u16).init(allocator);
     defer map.deinit();
 
+    var sum: u32 = 0;
+    var ratio_sum: u64 = 0;
+
     for (0..LEN) |y| {
         for (0..LEN) |x| {
             if (isSymbol(matrix[y][x])) {
+                var gear_count: u8 = 0;
+                var gear_ratio: u64 = 1;
+                var last_gear_number: u16 = 0;
+
                 for (squareAround(.{ .x = x, .y = y })) |adj_point| {
                     if (adj_point.x >= LEN or adj_point.y >= LEN) continue;
                     if (getNumber(&matrix, adj_point)) |num| {
-                        try map.put(num.pointHash, num.value);
+                        if (!map.contains(num.pointHash)) {
+                            try map.put(num.pointHash, num.value);
+                            sum += num.value;
+                        }
+                        if (isGear(matrix[y][x]) and last_gear_number != num.value) {
+                            last_gear_number = num.value;
+                            gear_count += 1;
+                            gear_ratio *= num.value;
+                        }
                     }
+                }
+
+                if (gear_count == 2) {
+                    ratio_sum += gear_ratio;
                 }
             }
         }
     }
 
-    var sum: u32 = 0;
-    var iterator = map.valueIterator();
-    while (iterator.next()) |value| {
-        sum += value.*;
-    }
     debug.print("Sum of all values: {}\n", .{sum});
+    debug.print("Sum of ratio: {}\n", .{ratio_sum});
 }
