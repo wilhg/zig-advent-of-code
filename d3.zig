@@ -70,19 +70,19 @@ fn loadMatrix() !Matrix {
     return matrix;
 }
 
-fn isDot(cell: u8) bool {
+inline fn isDot(cell: u8) bool {
     return cell == '.';
 }
 
-fn isNumeric(cell: u8) bool {
+inline fn isNumeric(cell: u8) bool {
     return cell >= '0' and cell <= '9';
 }
 
-fn isSymbol(cell: u8) bool {
+inline fn isSymbol(cell: u8) bool {
     return !isDot(cell) and !isNumeric(cell);
 }
 
-fn isGear(cell: u8) bool {
+inline fn isGear(cell: u8) bool {
     return cell == '*';
 }
 
