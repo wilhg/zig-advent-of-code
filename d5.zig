@@ -5,42 +5,41 @@ const fs = std.fs;
 const io = std.io;
 
 const STPair = struct {
-    source: u32,
-    target: u32,
-    range: u64,
+    source: i64,
+    target: i64,
+    range: i64,
 
-    fn withinRange(self: STPair, source: u64) bool {
-        return source >= self.source and source < @as(u64, self.target) + @as(u64, self.source);
+    fn withinRange(self: STPair, source: i64) bool {
+        return source >= self.source and source < self.source + self.range;
     }
 
-    fn calcTarget(self: STPair, source: u64) u64 {
-        const diff = @as(i64, @intCast(self.target)) - @as(i64, @intCast(self.source));
-        return @as(u64, @intCast(@as(i64, @intCast(source)) + diff));
+    fn calcTarget(self: STPair, source: i64) i64 {
+        const diff = self.target - self.source;
+        return source + diff;
     }
 };
 
 const STMap = struct {
     pairs: std.ArrayList(STPair),
 
-    fn calcTarget(self: STMap, source: u64) u64 {
-        var n = source;
+    fn calcTarget(self: STMap, source: i64) i64 {
         for (self.pairs.items) |pair| {
-            if (pair.withinRange(n)) {
-                n = pair.calcTarget(n);
+            if (pair.withinRange(source)) {
+                return pair.calcTarget(source);
             }
         }
-        return n;
+        return source;
     }
 };
 
-fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) !struct { seeds: std.ArrayList(u64), maps: std.ArrayList(STMap) } {
+fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) !struct { seeds: std.ArrayList(i64), maps: std.ArrayList(STMap) } {
     const file = try fs.cwd().openFile(file_path, .{});
     defer file.close();
 
     var buf_reader = io.bufferedReader(file.reader());
     var in_stream = buf_reader.reader();
 
-    var seeds = std.ArrayList(u64).init(allocator);
+    var seeds = std.ArrayList(i64).init(allocator);
     errdefer seeds.deinit();
 
     var maps = std.ArrayList(STMap).init(allocator);
@@ -56,16 +55,16 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) !struct { see
         if (mem.startsWith(u8, line, "seeds:")) {
             var it = mem.tokenize(u8, line[7..], " ");
             while (it.next()) |num_str| {
-                const num = try fmt.parseInt(u64, num_str, 10);
+                const num = try fmt.parseInt(i64, num_str, 10);
                 try seeds.append(num);
             }
         } else if (mem.endsWith(u8, line, "map:")) {
             try maps.append(STMap{ .pairs = std.ArrayList(STPair).init(allocator) });
         } else if (line.len > 0) {
             var it = mem.tokenize(u8, line, " ");
-            const target = try fmt.parseInt(u32, it.next().?, 10);
-            const source = try fmt.parseInt(u32, it.next().?, 10);
-            const range = try fmt.parseInt(u32, it.next().?, 10);
+            const target = try fmt.parseInt(i64, it.next().?, 10);
+            const source = try fmt.parseInt(i64, it.next().?, 10);
+            const range = try fmt.parseInt(i64, it.next().?, 10);
             try maps.items[maps.items.len - 1].pairs.append(STPair{
                 .source = source,
                 .target = target,
@@ -92,9 +91,10 @@ pub fn main() !void {
         }
         maps.deinit();
     }
-    var lowest_result: u64 = std.math.maxInt(u64);
+
+    var lowest_result: i64 = std.math.maxInt(i64);
     for (seeds.items) |seed| {
-        var n: u64 = seed;
+        var n: i64 = seed;
         for (maps.items) |map| {
             n = map.calcTarget(n);
         }
