@@ -9,13 +9,22 @@ const STPair = struct {
     target: i64,
     range: i64,
 
-    fn withinRange(self: STPair, source: i64) bool {
+    fn withinRangeS(self: STPair, source: i64) bool {
         return source >= self.source and source < self.source + self.range;
     }
 
     fn calcTarget(self: STPair, source: i64) i64 {
         const diff = self.target - self.source;
         return source + diff;
+    }
+
+    fn withinRangeT(self: STPair, target: i64) bool {
+        return target >= self.target and target < self.target + self.range;
+    }
+
+    fn calcSource(self: STPair, target: i64) i64 {
+        const diff = self.target - self.source;
+        return target - diff;
     }
 };
 
@@ -24,11 +33,20 @@ const STMap = struct {
 
     fn calcTarget(self: STMap, source: i64) i64 {
         for (self.pairs.items) |pair| {
-            if (pair.withinRange(source)) {
+            if (pair.withinRangeS(source)) {
                 return pair.calcTarget(source);
             }
         }
         return source;
+    }
+
+    fn calcSource(self: STMap, target: i64) i64 {
+        for (self.pairs.items) |pair| {
+            if (pair.withinRangeT(target)) {
+                return pair.calcSource(target);
+            }
+        }
+        return target;
     }
 };
 
@@ -76,6 +94,28 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) !struct { see
     return .{ .seeds = seeds, .maps = maps };
 }
 
+fn foundSeed(seed: i64) bool {
+    const real_seeds = [_][2]i64{
+        .{ 4043382508, 113348245 },
+        .{ 3817519559, 177922221 },
+        .{ 3613573568, 7600537 },
+        .{ 773371046, 400582097 },
+        .{ 2054637767, 162982133 },
+        .{ 2246524522, 153824596 },
+        .{ 1662955672, 121419555 },
+        .{ 2473628355, 846370595 },
+        .{ 1830497666, 190544464 },
+        .{ 230006436, 483872831 },
+    };
+
+    for (real_seeds) |seed_range| {
+        if (seed >= seed_range[0] and seed < seed_range[0] + seed_range[1]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -102,6 +142,18 @@ pub fn main() !void {
     }
 
     std.debug.print("Lowest result: {d}\n", .{lowest_result});
+
+    for (0..std.math.maxInt(u32)) |location| {
+        var n: i64 = @intCast(location);
+        var i = maps.items.len;
+        while (i > 0) : (i -= 1) {
+            n = maps.items[i - 1].calcSource(n);
+        }
+        if (foundSeed(n)) {
+            std.debug.print("Found seed at location {d}\n", .{location});
+            break;
+        }
+    }
 
     // Print parsed data
     // std.debug.print("Seeds: {any}\n", .{seeds.items});
