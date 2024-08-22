@@ -32,21 +32,55 @@ const STMap = struct {
     pairs: std.ArrayList(STPair),
 
     fn calcTarget(self: STMap, source: i64) i64 {
-        for (self.pairs.items) |pair| {
+        var left: usize = 0;
+        var right: usize = self.pairs.items.len;
+
+        while (left < right) {
+            const mid = left + (right - left) / 2;
+            const pair = self.pairs.items[mid];
             if (pair.withinRangeS(source)) {
                 return pair.calcTarget(source);
+            } else if (source < pair.source) {
+                right = mid;
+            } else {
+                left = mid + 1;
             }
         }
         return source;
     }
 
     fn calcSource(self: STMap, target: i64) i64 {
-        for (self.pairs.items) |pair| {
+        var left: usize = 0;
+        var right: usize = self.pairs.items.len;
+
+        while (left < right) {
+            const mid = left + (right - left) / 2;
+            const pair = self.pairs.items[mid];
             if (pair.withinRangeT(target)) {
                 return pair.calcSource(target);
+            } else if (target < pair.target) {
+                right = mid;
+            } else {
+                left = mid + 1;
             }
         }
         return target;
+    }
+
+    fn sortBySource(self: *STMap) void {
+        std.sort.sort(STPair, self.pairs.items, {}, struct {
+            fn lessThan(_: void, a: STPair, b: STPair) bool {
+                return a.source < b.source;
+            }
+        }.lessThan);
+    }
+
+    fn sortByTarget(self: *STMap) void {
+        std.sort.sort(STPair, self.pairs.items, {}, struct {
+            fn lessThan(_: void, a: STPair, b: STPair) bool {
+                return a.target < b.target;
+            }
+        }.lessThan);
     }
 };
 
@@ -143,7 +177,18 @@ pub fn main() !void {
 
     std.debug.print("Lowest result: {d}\n", .{lowest_result});
 
-    for (0..std.math.maxInt(u32)) |location| {
+    // Sort maps for efficient searching
+    for (maps.items) |*map| {
+        map.sortBySource();
+    }
+
+    // Sort maps by target for reverse lookup
+    for (maps.items) |*map| {
+        map.sortByTarget();
+    }
+
+    var location: u64 = 0;
+    while (location < std.math.maxInt(u32)) : (location += 1) {
         var n: i64 = @intCast(location);
         var i = maps.items.len;
         while (i > 0) : (i -= 1) {
