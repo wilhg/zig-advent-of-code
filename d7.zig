@@ -14,31 +14,42 @@ fn cardValue(card: u8) u8 {
         'A' => 14,
         'K' => 13,
         'Q' => 12,
-        'J' => 11,
         'T' => 10,
+        'J' => 1, // Joker is now the lowest value
         else => card - '0',
     };
 }
 
 fn handType(hand: *const Hand) u8 {
     var counts: [15]u8 = .{0} ** 15;
+    var jokers: u8 = 0;
     for (hand.cards) |card| {
-        counts[cardValue(card)] += 1;
+        if (card == 'J') {
+            jokers += 1;
+        } else {
+            counts[cardValue(card)] += 1;
+        }
     }
 
-    var has_three = false;
-    var pairs: u8 = 0;
+    var max_count: u8 = 0;
+    var second_max_count: u8 = 0;
     for (counts) |count| {
-        if (count == 5) return 6; // Five of a kind
-        if (count == 4) return 5; // Four of a kind
-        if (count == 3) has_three = true;
-        if (count == 2) pairs += 1;
+        if (count >= max_count) {
+            second_max_count = max_count;
+            max_count = count;
+        } else if (count > second_max_count) {
+            second_max_count = count;
+        }
     }
 
-    if (has_three and pairs == 1) return 4; // Full house
-    if (has_three) return 3; // Three of a kind
-    if (pairs == 2) return 2; // Two pair
-    if (pairs == 1) return 1; // One pair
+    max_count += jokers;
+
+    if (max_count == 5) return 6; // Five of a kind
+    if (max_count == 4) return 5; // Four of a kind
+    if (max_count == 3 and second_max_count == 2) return 4; // Full house
+    if (max_count == 3) return 3; // Three of a kind
+    if (max_count == 2 and second_max_count == 2) return 2; // Two pair
+    if (max_count == 2) return 1; // One pair
     return 0; // High card
 }
 
@@ -86,5 +97,5 @@ pub fn main() !void {
         total_winnings += hand.bid * @as(u64, i + 1);
     }
 
-    std.debug.print("Total winnings: {d}\n", .{total_winnings});
+    std.debug.print("Total winnings (Part 2): {d}\n", .{total_winnings});
 }
