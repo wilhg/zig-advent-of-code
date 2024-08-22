@@ -68,7 +68,7 @@ const STMap = struct {
     }
 
     fn sortBySource(self: *STMap) void {
-        std.sort.sort(STPair, self.pairs.items, {}, struct {
+        std.mem.sort(STPair, self.pairs.items, {}, struct {
             fn lessThan(_: void, a: STPair, b: STPair) bool {
                 return a.source < b.source;
             }
@@ -76,7 +76,7 @@ const STMap = struct {
     }
 
     fn sortByTarget(self: *STMap) void {
-        std.sort.sort(STPair, self.pairs.items, {}, struct {
+        std.mem.sort(STPair, self.pairs.items, {}, struct {
             fn lessThan(_: void, a: STPair, b: STPair) bool {
                 return a.target < b.target;
             }
