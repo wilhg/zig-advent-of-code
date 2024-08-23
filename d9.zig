@@ -13,7 +13,7 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
         lines.deinit();
     }
 
-    var buf: [1024]u8 = undefined;
+    var buf: [128]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var numbers = std.ArrayList(i32).init(allocator);
         errdefer numbers.deinit();
