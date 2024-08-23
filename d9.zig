@@ -1,62 +1,56 @@
 const std = @import("std");
-const ArrayList = std.ArrayList;
 
-fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) !ArrayList(ArrayList(i64)) {
+fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
     const file = try std.fs.cwd().openFile(file_path, .{});
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
     var in_stream = buf_reader.reader();
 
-    var lines = ArrayList(ArrayList(i64)).init(allocator);
+    var lines = std.ArrayList([]i32).init(allocator);
+    defer lines.deinit();
 
     var buf: [128]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        var numbers = std.ArrayList(i32).init(allocator);
+        defer numbers.deinit();
+
         var it = std.mem.tokenize(u8, line, " ");
-        var row = ArrayList(i64).init(allocator);
         while (it.next()) |num_str| {
-            const num = try std.fmt.parseInt(i64, num_str, 10);
-            try row.append(num);
+            const num = try std.fmt.parseInt(i32, num_str, 10);
+            try numbers.append(num);
         }
-        try lines.append(row);
+        try lines.append(try numbers.toOwnedSlice());
     }
 
-    return lines;
+    return try lines.toOwnedSlice();
 }
 
-fn areAllZeroes(data: ArrayList(i64)) bool {
-    for (data.items) |num| {
+fn areAllZeroes(data: []const i32) bool {
+    for (data) |num| {
         if (num != 0) return false;
     }
     return true;
 }
 
-fn subRow(allocator: std.mem.Allocator, data: ArrayList(i64)) !ArrayList(i64) {
-    var new_row = ArrayList(i64).init(allocator);
-    for (0..data.items.len - 1) |i| {
-        // std.debug.print("x={d}, i: {d}, i+1: {d}, diff: {d}\n", .{ i, data.items[i], data.items[i + 1], data.items[i + 1] - data.items[i] });
-        try new_row.append(data.items[i + 1] - data.items[i]);
+fn subRow(allocator: std.mem.Allocator, data: []const i32) ![]i32 {
+    var new_row = try allocator.alloc(i32, data.len - 1);
+    for (0..data.len - 1) |i| {
+        new_row[i] = data[i + 1] - data[i];
     }
     return new_row;
 }
 
-fn recur(allocator: std.mem.Allocator, row: *const ArrayList(i64)) !ArrayList(i64) {
-    var new_row = try ArrayList(i64).initCapacity(allocator, row.items.len + 1);
-    try new_row.appendSlice(row.items);
-
-    if (areAllZeroes(new_row)) {
-        try new_row.append(0);
-        return new_row;
+fn recur(allocator: std.mem.Allocator, row: []const i32) !i32 {
+    if (areAllZeroes(row)) {
+        return 0;
     }
 
-    const sub_row = try subRow(allocator, new_row);
-    defer sub_row.deinit();
+    const sub_row = try subRow(allocator, row);
+    defer allocator.free(sub_row);
 
-    const last = new_row.items[new_row.items.len - 1];
-    const sub_last = sub_row.items[sub_row.items.len - 1];
-    // std.debug.print("last: {d}, sub_last: {d}\n", .{ last, sub_last });
-    try new_row.append(last + sub_last);
-    return recur(allocator, &new_row);
+    const sub_result = try recur(allocator, sub_row);
+    return row[row.len - 1] + sub_result;
 }
 
 pub fn main() !void {
@@ -66,20 +60,15 @@ pub fn main() !void {
 
     const data = try parseInput(allocator, "d9_input.txt");
     defer {
-        for (data.items) |line| {
-            line.deinit();
+        for (data) |line| {
+            allocator.free(line);
         }
-        data.deinit();
+        allocator.free(data);
     }
-    // Print parsed data for verification
-    // for (data.items) |row| {
-    //     for (row.items) |num| {
-    //         std.debug.print("{d} ", .{num});
-    //     }
-    //     std.debug.print("\n", .{});
-    // }
 
-    var result = try recur(allocator, &data.items[0]);
-    defer result.deinit();
-    std.debug.print("Result: {d}\n", .{result.items[result.items.len - 1]});
+    var result: i32 = 0;
+    for (data) |row| {
+        result += try recur(allocator, row);
+    }
+    std.debug.print("Result: {d}\n", .{result});
 }
