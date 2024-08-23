@@ -1,5 +1,4 @@
 const std = @import("std");
-const LEN = 21;
 
 fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
     const file = try std.fs.cwd().openFile(file_path, .{});
@@ -30,35 +29,20 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
     return try lines.toOwnedSlice();
 }
 
-inline fn notZeros(arr: []const i32) bool {
-    return !std.mem.allEqual(i32, arr, 0);
-}
-
 fn extrapolateNext(sequence: []const i32) i32 {
-    // 2D array to store the original sequence and all levels of differences
-    var diffs: [LEN][LEN]i32 = undefined;
+    if (std.mem.allEqual(i32, sequence, 0)) return 0;
 
-    var level: usize = 0;
-    // Copy the input sequence to the first row of diffs
-    @memcpy(diffs[0][0..sequence.len], sequence);
+    var diffs = std.heap.stackFallback(20 * @sizeOf(i32), std.heap.page_allocator);
+    const allocator = diffs.get();
 
-    // Calculate differences until we reach a row of all zeros
-    while (level == 0 or notZeros(diffs[level][0 .. LEN - level])) : (level += 1) {
-        // Calculate the differences for the next level
-        for (0..LEN - level - 1) |i| {
-            diffs[level + 1][i] = diffs[level][i + 1] - diffs[level][i];
-        }
+    var diff_seq = allocator.alloc(i32, sequence.len - 1) catch unreachable;
+    defer if (diffs.fixed_buffer_allocator.end_index == 0) allocator.free(diff_seq);
+
+    for (sequence[1..], 0..) |v, i| {
+        diff_seq[i] = v - sequence[i];
     }
 
-    // Extrapolate the next value by summing the last elements of each level
-    var next_value: i32 = 0;
-
-    while (level > 0) {
-        level -= 1;
-        next_value += diffs[level][LEN - level - 1];
-    }
-
-    return next_value;
+    return sequence[sequence.len - 1] + extrapolateNext(diff_seq);
 }
 
 pub fn main() !void {
@@ -67,10 +51,6 @@ pub fn main() !void {
     const allocator = arena.allocator();
 
     const data = try parseInput(allocator, "d9_input.txt");
-    defer {
-        for (data) |sequence| allocator.free(sequence);
-        allocator.free(data);
-    }
 
     var sum: i32 = 0;
     for (data) |sequence| {
