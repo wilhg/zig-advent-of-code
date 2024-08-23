@@ -8,12 +8,15 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
     var in_stream = buf_reader.reader();
 
     var lines = std.ArrayList([]i32).init(allocator);
-    defer lines.deinit();
+    errdefer {
+        for (lines.items) |line| allocator.free(line);
+        lines.deinit();
+    }
 
-    var buf: [128]u8 = undefined;
+    var buf: [1024]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var numbers = std.ArrayList(i32).init(allocator);
-        defer numbers.deinit();
+        errdefer numbers.deinit();
 
         var it = std.mem.tokenize(u8, line, " ");
         while (it.next()) |num_str| {
@@ -26,49 +29,33 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
     return try lines.toOwnedSlice();
 }
 
-fn areAllZeroes(data: []const i32) bool {
-    for (data) |num| {
-        if (num != 0) return false;
-    }
-    return true;
-}
+fn extrapolateNext(sequence: []const i32) i32 {
+    if (std.mem.allEqual(i32, sequence, 0)) return 0;
 
-fn subRow(allocator: std.mem.Allocator, data: []const i32) ![]i32 {
-    var new_row = try allocator.alloc(i32, data.len - 1);
-    for (0..data.len - 1) |i| {
-        new_row[i] = data[i + 1] - data[i];
-    }
-    return new_row;
-}
+    var diffs = std.heap.stackFallback(20 * @sizeOf(i32), std.heap.page_allocator);
+    const allocator = diffs.get();
 
-fn recur(allocator: std.mem.Allocator, row: []const i32) !i32 {
-    if (areAllZeroes(row)) {
-        return 0;
+    var diff_seq = allocator.alloc(i32, sequence.len - 1) catch unreachable;
+    defer if (diffs.fixed_buffer_allocator.end_index == 0) allocator.free(diff_seq);
+
+    for (sequence[1..], 0..) |v, i| {
+        diff_seq[i] = v - sequence[i];
     }
 
-    const sub_row = try subRow(allocator, row);
-    defer allocator.free(sub_row);
-
-    const sub_result = try recur(allocator, sub_row);
-    return row[row.len - 1] + sub_result;
+    return sequence[sequence.len - 1] + extrapolateNext(diff_seq);
 }
 
 pub fn main() !void {
-    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
     const data = try parseInput(allocator, "d9_input.txt");
-    defer {
-        for (data) |line| {
-            allocator.free(line);
-        }
-        allocator.free(data);
+
+    var sum: i32 = 0;
+    for (data) |sequence| {
+        sum += extrapolateNext(sequence);
     }
 
-    var result: i32 = 0;
-    for (data) |row| {
-        result += try recur(allocator, row);
-    }
-    std.debug.print("Result: {d}\n", .{result});
+    std.debug.print("Result: {d}\n", .{sum});
 }
