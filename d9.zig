@@ -54,7 +54,7 @@ fn recur(allocator: std.mem.Allocator, row: []const i32) !i32 {
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

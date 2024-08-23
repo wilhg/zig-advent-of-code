@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer {
         const check = gpa.deinit();
         if (check == .leak) @panic("Memory leak detected");

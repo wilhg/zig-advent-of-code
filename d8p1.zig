@@ -6,7 +6,7 @@ const Node = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
