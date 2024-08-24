@@ -1,5 +1,5 @@
 const std = @import("std");
-const LEN = 21;
+const LEN: usize = 21;
 
 fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
     const file = try std.fs.cwd().openFile(file_path, .{});
@@ -24,6 +24,10 @@ fn parseInput(allocator: std.mem.Allocator, file_path: []const u8) ![][]i32 {
             const num = try std.fmt.parseInt(i32, num_str, 10);
             try numbers.append(num);
         }
+
+        // Part 2:Reverse the order of numbers in the row
+        std.mem.reverse(i32, numbers.items);
+
         try lines.append(try numbers.toOwnedSlice());
     }
 
