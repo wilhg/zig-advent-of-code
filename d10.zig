@@ -79,31 +79,15 @@ const Grid = struct {
         return self.data[p.y][p.x];
     }
 
-    // If it's a circle, return the number of steps
-    // If it's not a circle, return null
-    fn stepsInCircle(self: Grid, start_state: State) ?usize {
-        var state = start_state;
-        var count: usize = 0;
-        while (self.nextMove(state.position, state.forward)) |next| {
-            // std.debug.print("{}: {any}\n", .{ count, next });
-            if (next.position.eql(start_state.position)) {
-                return count;
-            }
-            count += 1;
-            state = next;
-        } else {
-            return null;
-        }
-    }
-
-    fn nextMove(self: Grid, p: Position, dir: Direction) ?State {
+    fn nextState(self: Grid, state: State) ?State {
+        const p = state.position;
         const tile = self.getTile(p);
         // std.debug.print("p={}, t={c}, d={any}\n", .{ p, tile.symbol, dir });
         if (tile.directions == null) {
             return null;
         }
 
-        const np = switch (dir) {
+        const np = switch (state.forward) {
             .north => if (p.y > 0) Position{ .y = p.y - 1, .x = p.x } else null,
             .south => if (p.y < LEN - 1) Position{ .y = p.y + 1, .x = p.x } else null,
             .east => if (p.x < LEN - 1) Position{ .y = p.y, .x = p.x + 1 } else null,
@@ -113,8 +97,25 @@ const Grid = struct {
 
         const next_tile = self.getTile(np.?);
 
-        if (np != null and tile.isConnectedOn(next_tile, dir)) {
-            return State{ .position = np.?, .forward = next_tile.exitDirection(opposite(dir)).? };
+        if (np != null and tile.isConnectedOn(next_tile, state.forward)) {
+            return State{ .position = np.?, .forward = next_tile.exitDirection(opposite(state.forward)).? };
+        } else {
+            return null;
+        }
+    }
+
+    // If it's a circle, return the number of steps
+    // If it's not a circle, return null
+    fn stepsInCircle(self: Grid, start_state: State) ?usize {
+        var cs = start_state; // cs = current state
+        var count: usize = 0;
+        while (self.nextState(cs)) |ns| { // ns = next state
+            // std.debug.print("{}: {any}\n", .{ count, next });
+            if (ns.position.eql(start_state.position)) {
+                return count;
+            }
+            count += 1;
+            cs = ns;
         } else {
             return null;
         }
