@@ -81,6 +81,7 @@ const INIT_STATE = State{
 };
 
 const LEN: usize = 140;
+
 const Grid = struct {
     data: [LEN][LEN]Tile,
 
@@ -166,16 +167,6 @@ const Grid = struct {
         }
     }
 
-    fn findAllInside(self: *Grid) usize {
-        var count: usize = 0;
-        for (self.data) |row| {
-            for (row) |tile| {
-                if (tile.color == .inside) count += 1;
-            }
-        }
-        return count;
-    }
-
     // inkjet to all the right side tiles until we hit the border
     fn inkjetCircle(self: *Grid, start_state: State) void {
         var cs = start_state; // cs = current state
@@ -201,6 +192,30 @@ const Grid = struct {
             cs = ns;
         }
     }
+
+    fn findAllInside(self: *Grid) usize {
+        var count: usize = 0;
+        for (self.data) |row| {
+            for (row) |tile| {
+                if (tile.color == .inside) count += 1;
+            }
+        }
+        return count;
+    }
+
+    fn printColor(self: *const Grid) void {
+        for (self.data) |row| {
+            for (row) |tile| {
+                const c: u8 = switch (tile.color) {
+                    .border => 'B',
+                    .inside => 'I',
+                    .none => '.',
+                };
+                std.debug.print("{c}", .{c});
+            }
+            std.debug.print("\n", .{});
+        }
+    }
 };
 
 fn loadGrid() !Grid {
@@ -219,25 +234,15 @@ fn loadGrid() !Grid {
 
 pub fn main() !void {
     var grid = try loadGrid();
+
     const steps = grid.stepsInCircle(INIT_STATE);
 
-    std.debug.print("Steps: {d}\n", .{@ceil(@as(f32, @floatFromInt(steps.?)) / 2)});
+    grid.stroke(INIT_STATE); // 描边
+    grid.inkjetCircle(INIT_STATE); // 喷墨
+    const inside_dots = grid.findAllInside(); // 计数
 
-    grid.stroke(INIT_STATE);
-    grid.inkjetCircle(INIT_STATE);
-    const inside_dots = grid.findAllInside();
+    grid.printColor();
+
+    std.debug.print("Farthest Steps: {d}\n", .{@ceil(@as(f32, @floatFromInt(steps.?)) / 2)});
     std.debug.print("Inside dots: {d}\n", .{inside_dots});
-
-    // print color
-    for (grid.data) |row| {
-        for (row) |tile| {
-            const c: u8 = switch (tile.color) {
-                .border => 'B',
-                .inside => 'I',
-                .none => '.',
-            };
-            std.debug.print("{c}", .{c});
-        }
-        std.debug.print("\n", .{});
-    }
 }
