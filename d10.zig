@@ -72,14 +72,15 @@ const State = struct {
     forward: Direction,
 };
 
+// because the grid is large, it's hard to tell which is inside and which is outside
+// the solution will be color the two sides at the same time
+// if one color touches the border, it's outside
 const INIT_STATE = State{
-    // .position = Position{ .y = 0, .x = 4 },
-    .position = Position{ .y = 50, .x = 95 },
-    .forward = .south,
+    .position = Position{ .y = 49, .x = 96 },
+    .forward = .west,
 };
 
 const LEN: usize = 140;
-// const LEN: usize = 20;
 const Grid = struct {
     data: [LEN][LEN]Tile,
 
@@ -181,20 +182,20 @@ const Grid = struct {
         while (self.nextState(cs)) |ns| { // ns = next state
             if (ns.position.eql(start_state.position)) return;
 
-            // inkjet to the right side
+            // Inkjet to the right side
             switch (cs.forward) {
+                .north => self.inkjetEast(cs.position),
                 .east => self.inkjetSouth(cs.position),
                 .south => self.inkjetWest(cs.position),
                 .west => self.inkjetNorth(cs.position),
-                .north => self.inkjetEast(cs.position),
             }
 
-            // inkjet to the right side on the next tile before turning
+            // Inkjet to the right side after moving before turning
             switch (cs.forward) {
+                .north => self.inkjetEast(ns.position),
                 .east => self.inkjetSouth(ns.position),
                 .south => self.inkjetWest(ns.position),
                 .west => self.inkjetNorth(ns.position),
-                .north => self.inkjetEast(ns.position),
             }
 
             cs = ns;
