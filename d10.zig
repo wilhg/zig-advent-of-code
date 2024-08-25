@@ -2,6 +2,12 @@ const std = @import("std");
 
 const Direction = enum(u2) { north, south, east, west };
 
+const Color = enum(u2) {
+    border,
+    inside,
+    none,
+};
+
 fn opposite(direction: Direction) Direction {
     return switch (direction) {
         .north => .south,
@@ -14,6 +20,7 @@ fn opposite(direction: Direction) Direction {
 const Tile = struct {
     symbol: u8,
     directions: ?[2]Direction,
+    color: Color,
 
     fn isConnectedOn(self: Tile, object: Tile, direction: Direction) bool {
         const self_dirs = self.directions orelse return false;
@@ -30,13 +37,13 @@ const Tile = struct {
     }
 };
 
-const TileNS = Tile{ .symbol = '|', .directions = .{ .north, .south } };
-const TileEW = Tile{ .symbol = '-', .directions = .{ .east, .west } };
-const TileNE = Tile{ .symbol = 'L', .directions = .{ .north, .east } };
-const TileNW = Tile{ .symbol = 'J', .directions = .{ .north, .west } };
-const TileSE = Tile{ .symbol = 'F', .directions = .{ .south, .east } };
-const TileSW = Tile{ .symbol = '7', .directions = .{ .south, .west } };
-const TileNone = Tile{ .symbol = '.', .directions = null };
+const TileNS = Tile{ .symbol = '|', .directions = .{ .north, .south }, .color = .none };
+const TileEW = Tile{ .symbol = '-', .directions = .{ .east, .west }, .color = .none };
+const TileNE = Tile{ .symbol = 'L', .directions = .{ .north, .east }, .color = .none };
+const TileNW = Tile{ .symbol = 'J', .directions = .{ .north, .west }, .color = .none };
+const TileSE = Tile{ .symbol = 'F', .directions = .{ .south, .east }, .color = .none };
+const TileSW = Tile{ .symbol = '7', .directions = .{ .south, .west }, .color = .none };
+const TileNone = Tile{ .symbol = '.', .directions = null, .color = .none };
 
 fn parseTile(c: u8) Tile {
     return switch (c) {
@@ -66,19 +73,21 @@ const State = struct {
 };
 
 const INIT_STATE = State{
+    // .position = Position{ .y = 0, .x = 4 },
     .position = Position{ .y = 50, .x = 95 },
     .forward = .south,
 };
 
 const LEN: usize = 140;
+// const LEN: usize = 20;
 const Grid = struct {
     data: [LEN][LEN]Tile,
 
-    fn getTile(self: *const Grid, p: Position) *const Tile {
+    fn getTile(self: *Grid, p: Position) *Tile {
         return &self.data[p.y][p.x];
     }
 
-    fn nextState(self: *const Grid, state: State) ?State {
+    fn nextState(self: *Grid, state: State) ?State {
         const p = state.position;
         const tile = self.getTile(p);
         if (tile.directions == null) return null;
@@ -98,7 +107,7 @@ const Grid = struct {
         return State{ .position = np, .forward = next_dir };
     }
 
-    fn stepsInCircle(self: *const Grid, start_state: State) ?usize {
+    fn stepsInCircle(self: *Grid, start_state: State) ?usize {
         var cs = start_state; // cs = current state
         var count: usize = 0;
         while (self.nextState(cs)) |ns| { // ns = next state
@@ -107,6 +116,89 @@ const Grid = struct {
             cs = ns;
         }
         return null;
+    }
+
+    fn stroke(self: *Grid, start_state: State) void {
+        var cs = start_state; // cs = current state
+        self.getTile(cs.position).color = .border;
+        while (self.nextState(cs)) |ns| { // ns = next state
+            if (ns.position.eql(start_state.position)) return;
+            self.getTile(cs.position).color = .border;
+            cs = ns;
+        }
+        return;
+    }
+
+    fn inkjetNorth(self: *Grid, p: Position) void {
+        var y: usize = p.y -| 1;
+        while (y > 0) : (y -= 1) {
+            var tile = self.getTile(.{ .y = y, .x = p.x });
+            if (tile.color == .border) break;
+            tile.color = .inside;
+        }
+    }
+
+    fn inkjetSouth(self: *Grid, p: Position) void {
+        var y = p.y +| 1;
+        while (y < LEN - 1) : (y += 1) {
+            var tile = self.getTile(.{ .y = y, .x = p.x });
+            if (tile.color == .border) break;
+            tile.color = .inside;
+        }
+    }
+
+    fn inkjetWest(self: *Grid, p: Position) void {
+        var x = p.x -| 1;
+        while (x > 0) : (x -= 1) {
+            var tile = self.getTile(.{ .y = p.y, .x = x });
+            if (tile.color == .border) break;
+            tile.color = .inside;
+        }
+    }
+
+    fn inkjetEast(self: *Grid, p: Position) void {
+        var x = p.x +| 1;
+        while (x < LEN - 1) : (x += 1) {
+            var tile = self.getTile(.{ .y = p.y, .x = x });
+            if (tile.color == .border) break;
+            tile.color = .inside;
+        }
+    }
+
+    fn findAllInside(self: *Grid) usize {
+        var count: usize = 0;
+        for (self.data) |row| {
+            for (row) |tile| {
+                if (tile.color == .inside) count += 1;
+            }
+        }
+        return count;
+    }
+
+    // inkjet to all the right side tiles until we hit the border
+    fn inkjetCircle(self: *Grid, start_state: State) void {
+        var cs = start_state; // cs = current state
+        while (self.nextState(cs)) |ns| { // ns = next state
+            if (ns.position.eql(start_state.position)) return;
+
+            // inkjet to the right side
+            switch (cs.forward) {
+                .east => self.inkjetSouth(cs.position),
+                .south => self.inkjetWest(cs.position),
+                .west => self.inkjetNorth(cs.position),
+                .north => self.inkjetEast(cs.position),
+            }
+
+            // inkjet to the right side on the next tile before turning
+            switch (cs.forward) {
+                .east => self.inkjetSouth(ns.position),
+                .south => self.inkjetWest(ns.position),
+                .west => self.inkjetNorth(ns.position),
+                .north => self.inkjetEast(ns.position),
+            }
+
+            cs = ns;
+        }
     }
 };
 
@@ -125,8 +217,26 @@ fn loadGrid() !Grid {
 }
 
 pub fn main() !void {
-    const grid = try loadGrid();
+    var grid = try loadGrid();
     const steps = grid.stepsInCircle(INIT_STATE);
 
     std.debug.print("Steps: {d}\n", .{@ceil(@as(f32, @floatFromInt(steps.?)) / 2)});
+
+    grid.stroke(INIT_STATE);
+    grid.inkjetCircle(INIT_STATE);
+    const inside_dots = grid.findAllInside();
+    std.debug.print("Inside dots: {d}\n", .{inside_dots});
+
+    // print color
+    for (grid.data) |row| {
+        for (row) |tile| {
+            const c: u8 = switch (tile.color) {
+                .border => 'B',
+                .inside => 'I',
+                .none => '.',
+            };
+            std.debug.print("{c}", .{c});
+        }
+        std.debug.print("\n", .{});
+    }
 }
