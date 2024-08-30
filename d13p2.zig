@@ -17,25 +17,35 @@ fn solvePuzzle(input: []const u8) !usize {
     return total;
 }
 
-fn findSmudgedReflection(pattern: []const u8) !usize {
-    var lines = std.mem.split(u8, pattern, "\n");
-    var grid = std.ArrayList([]const u8).init(std.heap.page_allocator);
-    defer grid.deinit();
+// Use a fixed-size buffer for the grid
+const MAX_GRID_SIZE = 32;
+const MAX_LINE_LENGTH = 32;
 
+fn findSmudgedReflection(pattern: []const u8) !usize {
+    var grid: [MAX_GRID_SIZE][MAX_LINE_LENGTH]u8 = undefined;
+    var grid_width: usize = 0;
+    var grid_height: usize = 0;
+
+    var lines = std.mem.split(u8, pattern, "\n");
     while (lines.next()) |line| {
-        try grid.append(line);
+        if (grid_height >= MAX_GRID_SIZE) return error.GridTooLarge;
+        if (line.len > MAX_LINE_LENGTH) return error.LineTooLong;
+
+        @memcpy(grid[grid_height][0..line.len], line);
+        grid_width = @max(grid_width, line.len);
+        grid_height += 1;
     }
 
     // Check for horizontal reflection with one smudge
-    for (1..grid.items.len) |i| {
-        if (isSmudgedHorizontalReflection(grid.items, i)) {
+    for (1..grid_height) |i| {
+        if (isSmudgedHorizontalReflection(grid[0..grid_height], i)) {
             return i * 100;
         }
     }
 
     // Check for vertical reflection with one smudge
-    for (1..grid.items[0].len) |i| {
-        if (isSmudgedVerticalReflection(grid.items, i)) {
+    for (1..grid_width) |i| {
+        if (isSmudgedVerticalReflection(grid[0..grid_height], grid_width, i)) {
             return i;
         }
     }
@@ -43,12 +53,12 @@ fn findSmudgedReflection(pattern: []const u8) !usize {
     return error.NoReflectionFound;
 }
 
-fn isSmudgedHorizontalReflection(grid: []const []const u8, row: usize) bool {
+fn isSmudgedHorizontalReflection(grid: [][MAX_LINE_LENGTH]u8, row: usize) bool {
     var smudges: usize = 0;
     var top = row - 1;
     var bottom = row;
     while (top < grid.len and bottom < grid.len) {
-        smudges += countDifferences(grid[top], grid[bottom]);
+        smudges += countDifferences(grid[top][0..], grid[bottom][0..]);
         if (smudges > 1) return false;
         if (top == 0) break;
         top -= 1;
@@ -57,11 +67,11 @@ fn isSmudgedHorizontalReflection(grid: []const []const u8, row: usize) bool {
     return smudges == 1;
 }
 
-fn isSmudgedVerticalReflection(grid: []const []const u8, col: usize) bool {
+fn isSmudgedVerticalReflection(grid: [][MAX_LINE_LENGTH]u8, width: usize, col: usize) bool {
     var smudges: usize = 0;
     var left = col - 1;
     var right = col;
-    while (left < grid[0].len and right < grid[0].len) {
+    while (left < width and right < width) {
         for (grid) |row| {
             if (row[left] != row[right]) {
                 smudges += 1;
@@ -77,8 +87,8 @@ fn isSmudgedVerticalReflection(grid: []const []const u8, col: usize) bool {
 
 fn countDifferences(a: []const u8, b: []const u8) usize {
     var diff: usize = 0;
-    for (a, 0..) |char, i| {
-        if (char != b[i]) diff += 1;
+    for (a[0..@min(a.len, b.len)], b[0..@min(a.len, b.len)]) |char_a, char_b| {
+        if (char_a != char_b) diff += 1;
     }
     return diff;
 }
