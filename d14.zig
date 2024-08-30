@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const GRID_SIZE = 100;
+const SIZE = 100;
 const Direction = enum { North, West, South, East };
 
 pub fn main() !void {
@@ -10,7 +10,7 @@ pub fn main() !void {
 }
 
 fn calculateTotalLoadAfterCycles(input: []const u8, cycles: usize) !usize {
-    var grid: [GRID_SIZE][GRID_SIZE]u8 = undefined;
+    var grid: [SIZE][SIZE]u8 = undefined;
 
     var row: usize = 0;
     var col: usize = 0;
@@ -24,7 +24,7 @@ fn calculateTotalLoadAfterCycles(input: []const u8, cycles: usize) !usize {
         }
     }
 
-    var seen = std.AutoHashMap([GRID_SIZE][GRID_SIZE]u8, usize).init(std.heap.page_allocator);
+    var seen = std.AutoHashMap([SIZE][SIZE]u8, usize).init(std.heap.page_allocator);
     defer seen.deinit();
 
     var cycle: usize = 0;
@@ -43,19 +43,19 @@ fn calculateTotalLoadAfterCycles(input: []const u8, cycles: usize) !usize {
     return calculateLoad(&grid);
 }
 
-fn performCycle(grid: *[GRID_SIZE][GRID_SIZE]u8) void {
+fn performCycle(grid: *[SIZE][SIZE]u8) void {
     tilt(grid, .North);
     tilt(grid, .West);
     tilt(grid, .South);
     tilt(grid, .East);
 }
 
-fn tilt(grid: *[GRID_SIZE][GRID_SIZE]u8, direction: Direction) void {
+fn tilt(grid: *[SIZE][SIZE]u8, direction: Direction) void {
     switch (direction) {
         .North => {
-            for (0..GRID_SIZE) |col| {
+            for (0..SIZE) |col| {
                 var emptyRow: usize = 0;
-                for (0..GRID_SIZE) |row| {
+                for (0..SIZE) |row| {
                     switch (grid[row][col]) {
                         'O' => {
                             if (row != emptyRow) {
@@ -73,9 +73,9 @@ fn tilt(grid: *[GRID_SIZE][GRID_SIZE]u8, direction: Direction) void {
             }
         },
         .West => {
-            for (0..GRID_SIZE) |row| {
+            for (0..SIZE) |row| {
                 var emptyCol: usize = 0;
-                for (0..GRID_SIZE) |col| {
+                for (0..SIZE) |col| {
                     switch (grid[row][col]) {
                         'O' => {
                             if (col != emptyCol) {
@@ -93,9 +93,9 @@ fn tilt(grid: *[GRID_SIZE][GRID_SIZE]u8, direction: Direction) void {
             }
         },
         .South => {
-            for (0..GRID_SIZE) |col| {
-                var emptyRow: usize = GRID_SIZE - 1;
-                var row: usize = GRID_SIZE;
+            for (0..SIZE) |col| {
+                var emptyRow: usize = SIZE - 1;
+                var row: usize = SIZE;
                 while (row > 0) {
                     row -= 1;
                     switch (grid[row][col]) {
@@ -115,9 +115,9 @@ fn tilt(grid: *[GRID_SIZE][GRID_SIZE]u8, direction: Direction) void {
             }
         },
         .East => {
-            for (0..GRID_SIZE) |row| {
-                var emptyCol: usize = GRID_SIZE - 1;
-                var col: usize = GRID_SIZE;
+            for (0..SIZE) |row| {
+                var emptyCol: usize = SIZE - 1;
+                var col: usize = SIZE;
                 while (col > 0) {
                     col -= 1;
                     switch (grid[row][col]) {
@@ -139,13 +139,13 @@ fn tilt(grid: *[GRID_SIZE][GRID_SIZE]u8, direction: Direction) void {
     }
 }
 
-fn calculateLoad(grid: *const [GRID_SIZE][GRID_SIZE]u8) usize {
+fn calculateLoad(grid: *const [SIZE][SIZE]u8) usize {
     var totalLoad: usize = 0;
 
     for (grid, 0..) |row, i| {
         for (row) |cell| {
             if (cell == 'O') {
-                totalLoad += GRID_SIZE - i;
+                totalLoad += SIZE - i;
             }
         }
     }
