@@ -1,6 +1,7 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
-const SIZE = 110;
+const SIZE: usize = 110;
 
 const Tile = struct {
     position: Position,
@@ -10,6 +11,15 @@ const Tile = struct {
 
 const Grid = struct {
     tiles: [SIZE][SIZE]Tile,
+    beams: std.AutoHashMap(Beam, void),
+
+    fn cached(self: *const Grid, beam: Beam) bool {
+        const exist = self.beams.contains(beam);
+        if (!exist) {
+            self.beams.put(beam, null);
+        }
+        return exist;
+    }
 };
 
 const Direction = enum { Up, Down, Left, Right };
@@ -34,6 +44,8 @@ const Beam = struct {
     direction: Direction,
 
     fn birth(self: *Beam, dir: Direction) *Beam {
+        assert(self.direction != dir); // just go for one(self)
+
         return &Beam{
             .start = self.start,
             .direction = dir,
@@ -88,8 +100,12 @@ pub fn main() !void {
     var y: usize = 0;
     var lines = std.mem.split(u8, input, "\n");
     while (lines.next()) |line| : (y += 1) {
-        for (line, 0..) |char, x| {
-            grid.tiles[y][x] = Tile{ .mirror = char, .charged = false };
+        for (line, 0..) |c, x| {
+            grid.tiles[y][x] = Tile{
+                .position = .{ .y = y, .x = x },
+                .mirror = c,
+                .charged = false,
+            };
         }
     }
 
