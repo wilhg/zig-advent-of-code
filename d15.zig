@@ -20,24 +20,24 @@ pub fn main() !void {
 
     var it = std.mem.split(u8, content, ",");
     while (it.next()) |step| {
-        const h = hash(getKey(step));
+        const key = getKey(step);
+        const h = hash(key);
         if (map[h] == null) {
             map[h] = std.ArrayList(Pair).init(std.heap.page_allocator);
         }
 
         var list = &map[h].?;
 
-        // if step end with '-', remove the pair from the hashmap
+        // if step ends with '-', remove the pair from the hashmap
         if (step[step.len - 1] == '-') {
-            for (list.items, 0..) |pair, i| {
-                if (std.mem.eql(u8, pair.key, step)) {
+            for (list.items, 0..) |*pair, i| {
+                if (std.mem.eql(u8, pair.key, key)) {
                     _ = list.orderedRemove(i);
                     break;
                 }
             }
         } else { // with =
-            const key = step[0 .. step.len - 2];
-            const value = try std.fmt.parseInt(u4, step[step.len - 1 .. step.len], 10);
+            const value = try std.fmt.parseInt(u4, step[step.len - 1 ..], 10);
             // if key is already in the list, update the value, else append
             var found = false;
             for (list.items) |*pair| {
@@ -76,11 +76,7 @@ fn hash(step: []const u8) u8 {
 }
 
 fn getKey(step: []const u8) []const u8 {
-    // if step end with '-', return the step without the last character
-    // else return the step without the last two characters
-    if (step[step.len - 1] == '-') {
-        return step[0 .. step.len - 1];
-    } else {
-        return step[0 .. step.len - 2];
-    }
+    // if step ends with '-', return the step without the last character
+    // else return the step without the last two characters (=X)
+    return if (step[step.len - 1] == '-') step[0 .. step.len - 1] else step[0 .. step.len - 2];
 }
