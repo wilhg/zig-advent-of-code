@@ -1,5 +1,4 @@
 const std = @import("std");
-const assert = std.debug.assert;
 
 const SIZE: usize = 110;
 
@@ -18,7 +17,7 @@ fn countChargedAndReset() usize {
             }
         }
     }
-
+    std.debug.print("count: {d}\n", .{count});
     return count;
 }
 
@@ -86,7 +85,7 @@ fn pass(b: *const Beam, p: Position) void {
     }
 }
 
-fn spinLaunch(p: Position, dir: Direction) void {
+fn rotateLaunch(p: Position, dir: Direction) void {
     pass(&Beam{ .start = p, .dir = dir }, p);
 }
 
@@ -108,72 +107,64 @@ pub fn main() !void {
     for (0..SIZE) |x| {
         const p = Position{ .y = 0, .x = x };
         switch (tiles[0][x]) {
-            '.', '|' => spinLaunch(p, .Down),
-            '/' => spinLaunch(p, .Left),
-            '\\' => spinLaunch(p, .Right),
+            '.', '|' => rotateLaunch(p, .Down),
+            '/' => rotateLaunch(p, .Left),
+            '\\' => rotateLaunch(p, .Right),
             '-' => {
-                spinLaunch(p, .Left);
-                spinLaunch(p, .Right);
+                rotateLaunch(p, .Left);
+                rotateLaunch(p, .Right);
             },
             else => unreachable,
         }
-        const count = countChargedAndReset();
-        std.debug.print("count: {}\n", .{count});
-        max_count = @max(max_count, count);
+        max_count = @max(max_count, countChargedAndReset());
     }
 
     // from bottom
     for (0..SIZE) |x| {
         const p = Position{ .y = SIZE - 1, .x = x };
         switch (tiles[SIZE - 1][x]) {
-            '.', '|' => spinLaunch(p, .Up),
-            '/' => spinLaunch(p, .Right),
-            '\\' => spinLaunch(p, .Left),
+            '.', '|' => rotateLaunch(p, .Up),
+            '/' => rotateLaunch(p, .Right),
+            '\\' => rotateLaunch(p, .Left),
             '-' => {
-                spinLaunch(p, .Left);
-                spinLaunch(p, .Right);
+                rotateLaunch(p, .Left);
+                rotateLaunch(p, .Right);
             },
             else => unreachable,
         }
-        const count = countChargedAndReset();
-        std.debug.print("count: {}\n", .{count});
-        max_count = @max(max_count, count);
+        max_count = @max(max_count, countChargedAndReset());
     }
 
     // from left
     for (0..SIZE) |y| {
         const p = Position{ .y = y, .x = 0 };
         switch (tiles[y][0]) {
-            '.', '-' => spinLaunch(p, .Right),
-            '/' => spinLaunch(p, .Up),
-            '\\' => spinLaunch(p, .Down),
+            '.', '-' => rotateLaunch(p, .Right),
+            '/' => rotateLaunch(p, .Up),
+            '\\' => rotateLaunch(p, .Down),
             '|' => {
-                spinLaunch(p, .Up);
-                spinLaunch(p, .Down);
+                rotateLaunch(p, .Up);
+                rotateLaunch(p, .Down);
             },
             else => unreachable,
         }
-        const count = countChargedAndReset();
-        std.debug.print("count: {}\n", .{count});
-        max_count = @max(max_count, count);
+        max_count = @max(max_count, countChargedAndReset());
     }
 
     // from right
     for (0..SIZE) |y| {
         const p = Position{ .y = y, .x = SIZE - 1 };
         switch (tiles[y][SIZE - 1]) {
-            '.', '-' => spinLaunch(p, .Left),
-            '/' => spinLaunch(p, .Down),
-            '\\' => spinLaunch(p, .Up),
+            '.', '-' => rotateLaunch(p, .Left),
+            '/' => rotateLaunch(p, .Down),
+            '\\' => rotateLaunch(p, .Up),
             '|' => {
-                spinLaunch(p, .Up);
-                spinLaunch(p, .Down);
+                rotateLaunch(p, .Up);
+                rotateLaunch(p, .Down);
             },
             else => unreachable,
         }
-        const count = countChargedAndReset();
-        std.debug.print("count: {}\n", .{count});
-        max_count = @max(max_count, count);
+        max_count = @max(max_count, countChargedAndReset());
     }
 
     std.debug.print("max count: {}\n", .{max_count});
