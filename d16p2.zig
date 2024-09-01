@@ -85,7 +85,7 @@ fn pass(b: *const Beam, p: Position) void {
     }
 }
 
-fn rotateLaunch(p: Position, dir: Direction) void {
+fn launch(p: Position, dir: Direction) void {
     pass(&Beam{ .start = p, .dir = dir }, p);
 }
 
@@ -107,12 +107,12 @@ pub fn main() !void {
     for (0..SIZE) |x| {
         const p = Position{ .y = 0, .x = x };
         switch (tiles[0][x]) {
-            '.', '|' => rotateLaunch(p, .Down),
-            '/' => rotateLaunch(p, .Left),
-            '\\' => rotateLaunch(p, .Right),
+            '.', '|' => launch(p, .Down),
+            '/' => launch(p, .Left),
+            '\\' => launch(p, .Right),
             '-' => {
-                rotateLaunch(p, .Left);
-                rotateLaunch(p, .Right);
+                launch(p, .Left);
+                launch(p, .Right);
             },
             else => unreachable,
         }
@@ -123,12 +123,12 @@ pub fn main() !void {
     for (0..SIZE) |x| {
         const p = Position{ .y = SIZE - 1, .x = x };
         switch (tiles[SIZE - 1][x]) {
-            '.', '|' => rotateLaunch(p, .Up),
-            '/' => rotateLaunch(p, .Right),
-            '\\' => rotateLaunch(p, .Left),
+            '.', '|' => launch(p, .Up),
+            '/' => launch(p, .Right),
+            '\\' => launch(p, .Left),
             '-' => {
-                rotateLaunch(p, .Left);
-                rotateLaunch(p, .Right);
+                launch(p, .Left);
+                launch(p, .Right);
             },
             else => unreachable,
         }
@@ -139,12 +139,12 @@ pub fn main() !void {
     for (0..SIZE) |y| {
         const p = Position{ .y = y, .x = 0 };
         switch (tiles[y][0]) {
-            '.', '-' => rotateLaunch(p, .Right),
-            '/' => rotateLaunch(p, .Up),
-            '\\' => rotateLaunch(p, .Down),
+            '.', '-' => launch(p, .Right),
+            '/' => launch(p, .Up),
+            '\\' => launch(p, .Down),
             '|' => {
-                rotateLaunch(p, .Up);
-                rotateLaunch(p, .Down);
+                launch(p, .Up);
+                launch(p, .Down);
             },
             else => unreachable,
         }
@@ -155,12 +155,12 @@ pub fn main() !void {
     for (0..SIZE) |y| {
         const p = Position{ .y = y, .x = SIZE - 1 };
         switch (tiles[y][SIZE - 1]) {
-            '.', '-' => rotateLaunch(p, .Left),
-            '/' => rotateLaunch(p, .Down),
-            '\\' => rotateLaunch(p, .Up),
+            '.', '-' => launch(p, .Left),
+            '/' => launch(p, .Down),
+            '\\' => launch(p, .Up),
             '|' => {
-                rotateLaunch(p, .Up);
-                rotateLaunch(p, .Down);
+                launch(p, .Up);
+                launch(p, .Down);
             },
             else => unreachable,
         }
