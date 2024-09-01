@@ -17,7 +17,7 @@ fn countChargedAndReset() usize {
             }
         }
     }
-    std.debug.print("count: {d}\n", .{count});
+    // std.debug.print("count: {d}\n", .{count});
     return count;
 }
 
@@ -99,6 +99,8 @@ fn initTiles() void {
 }
 
 pub fn main() !void {
+    var timer = try std.time.Timer.start();
+
     _ = countChargedAndReset();
     initTiles();
 
@@ -167,5 +169,8 @@ pub fn main() !void {
         max_count = @max(max_count, countChargedAndReset());
     }
 
+    const elapsed_ns = timer.read();
+    const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+    std.debug.print("Execution time: {d:.3} ms\n", .{elapsed_ms});
     std.debug.print("max count: {}\n", .{max_count});
 }
